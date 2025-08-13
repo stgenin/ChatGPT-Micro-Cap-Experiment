@@ -513,16 +513,23 @@ def daily_results(chatgpt_portfolio: pd.DataFrame, cash: float) -> None:
     print(f"Annualized Sortino Ratio: {sortino_annualized:.4f}")
     print(f"Latest ChatGPT Equity: ${final_equity:.2f}")
     # Get S&P 500 data
-    spx = yf.download("^SPX", start="2025-06-27", end=final_date + pd.Timedelta(days=1), progress=False)
-    spx = cast(pd.DataFrame, spx)
-    spx = spx.reset_index()
+    try:
+        spx = yf.download("^GSPC", start="2025-06-27", end=final_date + pd.Timedelta(days=1), progress=False)
+        spx = cast(pd.DataFrame, spx)
+    except Exception as e:
+        print(f"Warning: failed to download S&P 500 data: {e}")
+    else:
+        if spx.empty:
+            print("Warning: no S&P 500 data available; skipping benchmark calculation.")
+        else:
+            spx = spx.reset_index()
 
-    # Normalize to $100
-    initial_price = spx["Close"].iloc[0].item()
-    price_now = spx["Close"].iloc[-1].item()
-    scaling_factor = 100 / initial_price
-    spx_value = price_now * scaling_factor
-    print(f"$100 Invested in the S&P 500: ${spx_value:.2f}")
+            # Normalize to $100
+            initial_price = spx["Close"].iloc[0].item()
+            price_now = spx["Close"].iloc[-1].item()
+            scaling_factor = 100 / initial_price
+            spx_value = price_now * scaling_factor
+            print(f"$100 Invested in the S&P 500: ${spx_value:.2f}")
     print("today's portfolio:")
     print(chatgpt_portfolio)
     print(f"cash balance: {cash}")
